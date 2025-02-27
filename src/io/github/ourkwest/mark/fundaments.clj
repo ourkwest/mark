@@ -1,11 +1,14 @@
-(ns mark.fundaments
+(ns io.github.ourkwest.mark.fundaments
   (:import
     [java.lang Math$RandomNumberGeneratorHolder]
     [java.util Random Collections ArrayList Collection]))
 
 
 (def TAU (* 2 Math/PI))
-(defn TAUS [n] (* TAU n))
+(defn TAUS [& numbers] (apply * TAU numbers))
+
+(defn ->degrees [radians]
+  (-> radians (/ TAU) (* 360)))
 
 (defmacro forcat
   "Like `clojure.core/for` but concatenates the results."
@@ -39,7 +42,7 @@
   ([v] v)
   ([v1 v2]
    (mapv + v1 v2))
-  ([v1 v2 & more]
+  ([v1 v2 & more] ; (apply mapv + v1 v2 more) ???
    (reduce v+ (v+ v1 v2) more)))
 
 (defn v- [v1 v2]
@@ -57,6 +60,13 @@
 (defn vlerp [v1 v2 p]
   (let [q (- 1 p)]
     (v+ (v* v1 q) (v* v2 p))))
+
+(defn vwalk
+  "walk a distance from v1 to v2"
+  ([v1 v2 distance]
+   (vwalk v1 v2 distance 1.0))
+  ([v1 v2 distance prop-limit]
+   (vlerp v1 v2 (min (/ distance (magnitude (v- v2 v1))) prop-limit))))
 
 (defn lerp [a b p]
   (let [q (- 1 p)]

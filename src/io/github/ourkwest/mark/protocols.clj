@@ -1,4 +1,4 @@
-(ns mark.protocols
+(ns io.github.ourkwest.mark.protocols
   (:import
     [java.awt Graphics2D]))
 

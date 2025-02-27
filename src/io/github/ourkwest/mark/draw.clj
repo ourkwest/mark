@@ -1,8 +1,8 @@
-(ns mark.draw
+(ns io.github.ourkwest.mark.draw
   (:require
-    [mark.fundaments :refer :all]
-    [mark.protocols :as protocols]
-    [mark.color :as color]
+    [io.github.ourkwest.mark.fundaments :refer :all]
+    [io.github.ourkwest.mark.protocols :as protocols]
+    [io.github.ourkwest.mark.color :as color]
     [clojure.java.io :as io])
   (:import
     [java.awt Polygon BasicStroke Font Graphics2D Color RenderingHints Rectangle]
@@ -34,6 +34,10 @@
       true)
     (prepare-for-fill [_ _]
       false)))
+
+;(defn clear-to-transparent
+;
+; )
 
 (defn styles [& styles]
   (reify protocols/Style
@@ -181,6 +185,26 @@
      (ImageIO/write ^RenderedImage image "png" ^File file)
      image)))
 
+(defn with-z-order [instruction z-order]
+  (assoc instruction :z-order z-order))
+
+(defn with-clip-to-shape [instruction shape]
+  (update instruction :f
+          (fn [f]
+            (fn [graphics]
+              (with-clip graphics shape
+                         (f graphics))))))
+
+(defn make-instruction
+  ; todo: would it be better to create all instructions as trees of graphics context operations rather than opaque
+  ; functions? - it would certainly aid transparency and power
+  ([f] {:f f})
+  ([f z-order]
+   (with-z-order (make-instruction f) z-order)))
+
+(defn shape-instruction [use-style use-shape]
+  (make-instruction #(shape % use-style use-shape)))
+
 (defn instruction [graphics {this-shape :shape
                              this-style :style
                              this-line  :line
@@ -220,7 +244,9 @@
   ([graphics ins]
    (instructions graphics ins identity))
   ([graphics ins tx]
-   (transduce (comp tx tx-instruction) (rf-noop graphics) (remove nil? (sort-by :z-order ins))))
+   (transduce (comp tx tx-instruction)
+              (rf-noop graphics)
+              (remove nil? (sort-by :z-order ins))))
   #_(doseq [{this-shape :shape
            this-style :style
            this-line  :line

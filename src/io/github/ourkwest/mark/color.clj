@@ -1,7 +1,8 @@
-(ns mark.color
+(ns io.github.ourkwest.mark.color
   (:require
-    [mark.fundaments :refer :all]
-    [clojure.string :as string])
+    [io.github.ourkwest.mark.fundaments :refer :all]
+    [clojure.string :as string]
+    [io.github.ourkwest.mark.props :as props])
   (:import
     [java.awt Color]))
 
@@ -65,6 +66,15 @@
 (defn to-rgb-str [chromatic]
   (let [[r g b _] (bits chromatic)]
     (str "rgb("r","g","b")")))
+
+(defn color-wheel
+  "Returns a rainbow of high saturation, high brightness colors in hue order.
+  n - number of colors
+  offset - number between 0 and 1, how far around the wheel to shift the colors"
+  ([n] (color-wheel n 0))
+  ([n offset]
+   (for [hue (map (partial + offset) (props/steps n))]
+     (Color/getHSBColor hue 1.0 1.0))))
 
 (comment
 

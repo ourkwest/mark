@@ -1,10 +1,12 @@
-(ns mark.see
+(ns io.github.ourkwest.mark.see
+  (:require [clojure.java.io :as io])
   (:import
-    (javax.swing WindowConstants JFrame)
+    [javax.imageio ImageIO]
+    (javax.swing ImageIcon JLabel WindowConstants JFrame)
     (java.awt Dimension Graphics Image Color Graphics2D RenderingHints)
     (java.util.concurrent Executors TimeUnit)
     (java.awt.event WindowAdapter)
-    [java.awt.image BufferedImage]))
+    [java.awt.image BufferedImage RenderedImage]))
 
 
 (defn see
@@ -56,7 +58,50 @@
       (.setVisible true))
     #(vreset! changed? true)))
 
-(defn window [title]
+(defprotocol Seeable
+  (redraw [this])
+  (set-image [this image])
+  (set-scale [this scale]))
+
+(defn ^Seeable window [title]
+  (let [!image (atom nil)
+        image-icon (ImageIcon.)
+        !scale (atom 1)
+        re-size (fn [frame]
+                  ; todo: fix dimensions!!
+                  (let [image (.getImage image-icon)
+                        dimension (Dimension. (* 1.1 (.getWidth image nil) @!scale)
+                                              (* 1.1 (.getHeight image nil) @!scale))
+                        content-pane (.getContentPane frame)]
+                    (.setPreferredSize content-pane dimension)
+                    (.setSize content-pane dimension))
+                  (.pack frame))
+        frame (proxy [JFrame io.github.ourkwest.mark.see.Seeable] []
+                #_(paint [^Graphics graphics]
+                  (when @!image
+                    (let [insets (-> this .getInsets)
+                          x1 (.left insets)
+                          y1 (.top insets)
+                          x2 (+ x1 (* (.getWidth @!image) @!scale))
+                          y2 (+ y1 (* (.getHeight @!image) @!scale))]
+                      (.drawImage graphics @!image x1 y1 x2 y2 this))))
+                (redraw [] (.repaint this))
+                (set_image [image]
+                  (.setImage image-icon image)
+                  ;(reset! !image image)
+                  (re-size this))
+                (set_scale [scale] (reset! !scale scale) (re-size this)))]
+    (doto frame
+      (.setTitle title)
+      ; frame.add(new JLabel(new ImageIcon("Path/To/Your/Image.png")));
+      (.add (JLabel. image-icon))
+      (-> .getContentPane (.setPreferredSize (Dimension. 200 200)))
+      (.setDefaultCloseOperation WindowConstants/DISPOSE_ON_CLOSE)
+      (.pack)
+      (.setVisible true))
+    frame))
+
+#_(defn window [title]
   (let [!image (volatile! nil)
         !scale (volatile! 1)
         frame ^JFrame (proxy [JFrame] []
@@ -70,7 +115,7 @@
                               (.drawImage graphics @!image x1 y1 x2 y2 this)))))
         re-size! (fn []
                    (println "re-size!")
-                   (.setPreferredSize (.getContentPane frame)
+                   (.setPreferredSize (.getContentPane frame) ; .setSize?
                                       (Dimension. (* (.getWidth @!image nil) @!scale)
                                                   (* (.getHeight @!image nil) @!scale)))
                    (.pack frame))]
@@ -82,17 +127,16 @@
       (.setVisible true))
     (fn redraw
       ([image scale]
-       (when (not= scale @!scale)
+       (when (or (not= scale @!scale)
+                 (not= image @!image))
          (vreset! !scale scale)
-         (re-size!))
-       (redraw image))
-      ([image]
-       (when (not= image @!image)
          (vreset! !image image)
          (re-size!))
-       (redraw))
+       (.repaint frame))
+      ([image]
+       (redraw image @!scale))
       ([]
-       (.repaint frame)))))
+       (redraw @!image @!scale)))))
 
 (defn image
   (^BufferedImage [rectangle]
@@ -105,3 +149,6 @@
     (.setRenderingHint graphics RenderingHints/KEY_ANTIALIASING RenderingHints/VALUE_ANTIALIAS_ON)
     (.setRenderingHint graphics RenderingHints/KEY_RENDERING RenderingHints/VALUE_RENDER_QUALITY)
     graphics))
+
+(defn save! [^RenderedImage image]
+  (ImageIO/write image "png" (io/file (str (gensym "saved-image") ".png"))))
