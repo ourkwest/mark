@@ -56,7 +56,7 @@
 (defn grayify [color]
   (let [[r g b a] (bits color)
         light (int (/ (+ r g b) 3))]
-    (Color. light light light a)))
+    (Color. light light light (int a))))
 
 (defn to-rgba-str [chromatic]
   (let [[r g b a] (bits chromatic)]

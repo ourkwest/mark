@@ -80,22 +80,24 @@
       (.setDefaultCloseOperation WindowConstants/DISPOSE_ON_CLOSE)
       (.pack)
       (.setVisible true))
-    (fn this-fn
+    (fn redraw
       ([image scale]
        (when (not= scale @!scale)
          (vreset! !scale scale)
          (re-size!))
-       (this-fn image))
+       (redraw image))
       ([image]
        (when (not= image @!image)
          (vreset! !image image)
          (re-size!))
+       (redraw))
+      ([]
        (.repaint frame)))))
 
-(defn ^BufferedImage image
-  ([rectangle]
+(defn image
+  (^BufferedImage [rectangle]
    (image (.getWidth rectangle) (.getHeight rectangle)))
-  ([width height]
+  (^BufferedImage [width height]
    (BufferedImage. width height BufferedImage/TYPE_INT_ARGB)))
 
 (defn nice-graphics [image]

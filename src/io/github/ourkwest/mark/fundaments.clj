@@ -19,17 +19,18 @@
       (max lower)
       (min upper)))
 
-(defonce rng (-> Math$RandomNumberGeneratorHolder
-                 (.getDeclaredField "randomNumberGenerator")
-                 (doto (.setAccessible true))
-                 (.get nil)))
+(comment
+  (defonce rng (-> Math$RandomNumberGeneratorHolder
+                   (.getDeclaredField "randomNumberGenerator")
+                   (doto (.setAccessible true))
+                   (.get nil)))
 
-(defn set-random-seed [seed]
-  (.setSeed ^Random rng seed))
+  (defn set-random-seed [seed]
+    (.setSeed ^Random rng seed))
 
-(defn shuffled [coll]
-  (doto (ArrayList. ^Collection coll)
-    (Collections/shuffle rng)))
+  (defn shuffled [coll]
+    (doto (ArrayList. ^Collection coll)
+      (Collections/shuffle rng))))
 
 (defn rand-0 [n]
   (- (rand n) (/ n 2)))
