@@ -38,6 +38,9 @@
 (defn rand-0 [n]
   (- (rand n) (/ n 2)))
 
+(defn v-extend [v n]
+  (vec (take n (concat v (repeat n 0)))))
+
 (defn v+
   ([v] v)
   ([v1 v2]
@@ -48,8 +51,8 @@
 (defn v- [v1 v2]
   (mapv - v1 v2))
 
-(defn v* [v f]
-  (mapv #(* f %) v))
+(defn v* [v sf]
+  (mapv #(* sf %) v))
 
 (defn normal [[x y]]
   [(- y) x])
@@ -67,6 +70,23 @@
    (vwalk v1 v2 distance 1.0))
   ([v1 v2 distance prop-limit]
    (vlerp v1 v2 (min (/ distance (magnitude (v- v2 v1))) prop-limit))))
+
+(defn v-rotate
+  ([v angle]
+   (v-rotate v [0 0] angle))
+  ([v center angle]
+   (let [[cx cy] center
+         [x y z] v]
+     [(+ cx
+         (* (- x cx) (Math/cos angle))
+         (* (- y cy) (Math/sin angle)))
+      #_(+ cy
+         (* (- y cy) (Math/cos angle))
+         (* (- x cx) (- (Math/sin angle))))
+      (+ cy
+         (* (- y cy) (- (Math/cos angle)))
+         (* (- x cx) (Math/sin angle)))
+      (or z 0)])))
 
 (defn lerp [a b p]
   (let [q (- 1 p)]

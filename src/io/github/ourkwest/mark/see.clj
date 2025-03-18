@@ -1,6 +1,9 @@
 (ns io.github.ourkwest.mark.see
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str])
   (:import
+    [java.time Instant]
+    [java.time.temporal ChronoUnit]
     [javax.imageio ImageIO]
     (javax.swing ImageIcon JLabel WindowConstants JFrame)
     (java.awt Dimension Graphics Image Color Graphics2D RenderingHints)
@@ -150,5 +153,9 @@
     (.setRenderingHint graphics RenderingHints/KEY_RENDERING RenderingHints/VALUE_RENDER_QUALITY)
     graphics))
 
+(def default-dir (doto (io/file "seen") (.mkdirs)))
+
 (defn save! [^RenderedImage image]
-  (ImageIO/write image "png" (io/file (str (gensym "saved-image") ".png"))))
+  (->> (str "saved-image-" (str/replace (str (.truncatedTo (Instant/now) ChronoUnit/SECONDS)) #"\D" "") ".png")
+       (io/file default-dir)
+       (ImageIO/write image "png")))
