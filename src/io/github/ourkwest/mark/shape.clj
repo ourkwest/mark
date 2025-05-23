@@ -101,11 +101,16 @@
 
   points should be a sequence of alternating points and control points, extra control points are hallucinated by
   inverting each control point about its preceeding point."
-  [n points]
-  (cons (first points)
-        (forcat [[p1 c1 p2 c2] (partition 4 2 points)]
-          (let [c2' (v- p2 (v- c2 p2))]
-            (rest (bezier p1 c1 c2' p2 n))))))
+  ([n points]
+   (cons (first points)
+         (forcat [[p1 c1 p2 c2] (partition 4 2 points)]
+           (let [c2' (v- p2 (v- c2 p2))]
+             (rest (bezier p1 c1 c2' p2 n))))))
+  ([points]
+   (cons (first points)
+         (forcat [[p1 c1 p2 c2] (partition 4 2 points)]
+           (let [c2' (v- p2 (v- c2 p2))]
+             (rest (bezier p1 c1 c2' p2)))))))
 
 (defn quadratic
   ([a b c]
@@ -159,9 +164,10 @@
   (partition 2 1 path))
 
 (defn walk-path [points f]
-  (for [[idx [a b]] (map-indexed vector (partition 2 1 points))
-        :let [p (/ idx (count points))]]
-    (f a b p)))
+  (doall
+    (for [[idx [a b]] (map-indexed vector (partition 2 1 points))
+          :let [p (/ idx (count points))]]
+      (f a b p))))
 
 (defn transforms [& tfs]
   (reduce (fn [a b]
@@ -187,9 +193,13 @@
     [(+ (.getX bounds) (* (.getWidth bounds) 1/2))
      (+ (.getY bounds) (* (.getHeight bounds) 1/2))]))
 
-(defn rotate [shape radians]
-  (doto (Area. shape)
-    (.transform (AffineTransform/getRotateInstance radians))))
+(defn rotate
+  ([shape radians]
+   (doto (Area. shape)
+     (.transform (AffineTransform/getRotateInstance radians))))
+  ([shape radians [center-x center-y]]
+   (doto (Area. shape)
+     (.transform (AffineTransform/getRotateInstance radians center-x center-y)))))
 
 (defn rotate-in-place [shape radians]
   (let [[cx cy] (get-center shape)]

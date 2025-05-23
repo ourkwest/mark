@@ -1,14 +1,19 @@
 (ns io.github.ourkwest.mark.color
   (:require
+    [clojure.string :as str]
     [io.github.ourkwest.mark.fundaments :refer :all]
     [clojure.string :as string]
     [io.github.ourkwest.mark.props :as props])
   (:import
+    [clojure.lang IPersistentVector]
     [java.awt Color]))
 
 
 (defprotocol Chromatic
-  (bits [chromatic]))
+  (bits [chromatic] "Returns [r g b a]")
+  (string [chromatic] "Returns 'rgba(r,g,b,a)'")
+  (awt-color [chromatic] "Returns a java.awt.Color")
+  (integer [chromatic] "Returns an integer"))
 
 (defn rgb
   ([color-bits]
@@ -26,12 +31,13 @@
            (int (clamp 0 a 255)))))
 
 (extend-protocol Chromatic
+
   Color
-  (bits [color]
-    [(.getRed ^Color color)
-     (.getGreen ^Color color)
-     (.getBlue ^Color color)
-     (.getAlpha ^Color color)])
+  (bits [color] [(.getRed ^Color color) (.getGreen ^Color color) (.getBlue ^Color color) (.getAlpha ^Color color)])
+  (string [color] (string (bits color)))
+  (awt-color [color] color)
+  (integer [color] (.getRGB color))
+
   String
   (bits [color-string]
     (cond
@@ -39,7 +45,20 @@
       (bits (-> color-string (subs 1) (Integer/parseInt 16) (Color.)))
 
       (string/starts-with? color-string "rgb")
-      (take 4 (concat (mapv parse-long (re-seq #"\d+" color-string)) [0 0 0 0])))))
+      (take 4 (concat (mapv parse-long (re-seq #"\d+" color-string)) [0 0 0 0]))))
+  (string [color-string] color-string)
+  (awt-color [color-string] (awt-color (bits color-string)))
+
+  IPersistentVector
+  (bits [vector-of-bits] vector-of-bits)
+  (string [vector-of-bits] (str "rgba(" (str/join "," vector-of-bits) ")"))
+  (awt-color [[r g b a]] (Color. (int r) (int g) (int b) (int a)))
+  (integer [vector-of-bits] (integer (awt-color vector-of-bits))))
+
+(defn to-awt-color [x]
+  (cond
+    (satisfies? Chromatic x) (awt-color x)
+    (integer? x) (Color. x)))
 
 (defn with-alpha [color alpha]
   (let [[r g b] (bits color)]

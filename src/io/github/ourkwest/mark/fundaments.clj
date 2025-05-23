@@ -10,6 +10,9 @@
 (defn ->degrees [radians]
   (-> radians (/ TAU) (* 360)))
 
+(defn ->radians [degrees]
+  (-> degrees (/ 360) (* TAU)))
+
 (defmacro forcat
   "Like `clojure.core/for` but concatenates the results."
   [seq-exprs body-expr]
@@ -54,11 +57,15 @@
 (defn v* [v sf]
   (mapv #(* sf %) v))
 
-(defn normal [[x y]]
-  [(- y) x])
-
 (defn magnitude [[x y]]
   (Math/sqrt (+ (* x x) (* y y))))
+
+(defn normal "Returns a perpendicular vector" [[x y]]
+  [(- y) x])
+
+(defn normalize "Scales to magnitude 1" [[x y :as v]]
+  (let [m (magnitude v)]
+    [(/ x m) (/ y m)]))
 
 (defn vlerp [v1 v2 p]
   (let [q (- 1 p)]
@@ -91,3 +98,28 @@
 (defn lerp [a b p]
   (let [q (- 1 p)]
     (+ (* a q) (* b p))))
+
+(defn intersect-0 "returns the intersection point of the lines [p0 p1] and [p2 p3]"
+  [[[p0-x p0-y] [p1-x p1-y]] [[p2-x p2-y] [p3-x p3-y]]]
+  (let [s1-x (- p1-x p0-x)
+        s1-y (- p1-y p0-y)
+        s2-x (- p3-x p2-x)
+        s2-y (- p3-y p2-y)
+        det (+ (* (- s2-x) s1-y)
+               (* s1-x s2-y))]
+    (when-not (zero? det)
+      (let [s (/ (+ (* (- s1-y) (- p0-x p2-x))
+                    (* s1-x (- p0-y p2-y)))
+                 det)
+            t (/ (- (* (- s2-x) (- p0-y p2-y))
+                    (* s2-y (- p0-x p2-x)))
+                 det)]
+        ;(println s1-x s1-y s2-x s2-y s t)
+        (when (and (>= s 0) (<= s 1)
+                   (>= t 0) (<= t 1))
+          [(+ p0-x (* t s1-x))
+           (+ p0-y (* t s1-y))])))))
+
+(defn intersect [line-a line-b]
+  (or (intersect-0 line-a line-b)
+      (intersect-0 (reverse line-a) line-b)))
